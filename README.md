@@ -1,4 +1,4 @@
-# omp-plugins-nix
+# omp-nix
 
 Declarative plugin and marketplace manager for [Oh My Pi (OMP)](https://github.com/can1357/oh-my-pi) via [Home Manager](https://github.com/nix-community/home-manager).
 
@@ -50,10 +50,11 @@ In your dotfiles or NixOS `flake.nix`:
       url = "github:cyberrin/omp-plugins-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-  };
-
-  outputs = { nixpkgs, home-manager, omp, omp-plugins, ... }: {
-    homeConfigurations."cyberrin" = home-manager.lib.homeManagerConfiguration {
+    # This flake
+    omp-plugins = {
+      url = "github:cyberrin/omp-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
       pkgs = nixpkgs.legacyPackages."x86_64-linux";
       modules = [
         omp.homeManagerModules.default          # Official OMP module

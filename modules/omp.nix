@@ -1,6 +1,7 @@
 { defaultOfficialMarketplace ? null }:
 {
   config,
+  options,
   lib,
   pkgs,
   ...
@@ -39,18 +40,8 @@ let
 in
 {
   options.programs.omp = {
-    enable = lib.mkEnableOption "Oh My Pi (OMP) declarative plugin management";
-
-    package = lib.mkOption {
-      type = lib.types.nullOr lib.types.package;
-      default = null;
-      description = "OMP package to install (optional, defaults to null when using system/flake omp).";
-    };
-
-    settings = lib.mkOption {
-      type = lib.types.nullOr (lib.types.attrsOf lib.types.anything);
-      default = null;
-      description = "Declarative settings for OMP agent configuration.";
+    enable = lib.mkOption {
+      type = lib.types.bool;
     };
 
     officialMarketplace = lib.mkOption {
@@ -122,20 +113,20 @@ in
     };
   };
 
-  config = lib.mkIf cfg.enable (lib.mkMerge [
-    # Optional package installation if specified
-    (lib.mkIf (cfg.package != null) {
-      home.packages = [ cfg.package ];
-    })
-
-    # Disable autoUpdate in programs.omp.settings if settings option is used
-    (lib.mkIf cfg.disableAutoUpdate {
-      programs.omp.settings = {
-        marketplace = {
-          autoUpdate = lib.mkDefault "off";
-        };
-      };
-    })
+  config = lib.mkMerge [
+    {
+      programs.omp.enable = lib.mkDefault false;
+    }
+    (lib.mkIf cfg.enable (lib.mkMerge [
+      (lib.mkIf cfg.disableAutoUpdate (
+        lib.optionalAttrs (options ? programs.omp && options.programs.omp ? settings) {
+          programs.omp.settings = {
+            marketplace = {
+              autoUpdate = lib.mkDefault "off";
+            };
+          };
+        }
+      ))
 
     # Primary XDG data directory links (OMP looks in $XDG_DATA_HOME/omp)
     {
@@ -180,5 +171,6 @@ EOF
         fi
       '';
     })
-  ]);
+    ]))
+  ];
 }

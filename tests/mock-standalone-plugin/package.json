@@ -1,0 +1,5 @@
+{
+  "name": "mock-standalone",
+  "version": "0.3.1",
+  "description": "A standalone plugin without its own marketplace catalog"
+}

@@ -1,0 +1,26 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "test-marketplace",
+  "owner": {
+    "name": "Test Author",
+    "email": "test@example.com"
+  },
+  "metadata": {
+    "description": "Mock marketplace for testing declarative OMP flakes",
+    "pluginRoot": "plugins"
+  },
+  "plugins": [
+    {
+      "name": "mock-plugin",
+      "description": "A mock skill plugin",
+      "version": "1.2.3",
+      "source": "./mock-plugin"
+    },
+    {
+      "name": "mock-extension",
+      "description": "A mock extension plugin with package.json",
+      "version": "2.0.0",
+      "source": "./mock-extension"
+    }
+  ]
+}

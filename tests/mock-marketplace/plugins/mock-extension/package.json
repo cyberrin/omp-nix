@@ -1,0 +1,8 @@
+{
+  "name": "mock-extension",
+  "version": "2.0.0",
+  "description": "Mock extension for OMP",
+  "omp": {
+    "extensions": ["./index.ts"]
+  }
+}

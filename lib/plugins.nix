@@ -107,13 +107,26 @@ let
   parseGitShorthand =
     spec:
     let
+      # Check (github:|https://github.com/)?owner/repo/(commit|tree)/<ref>
+      commitMatch = builtins.match "(https?://github\\.com/|github:)?([^/@#]+)/([^/@#]+)/(commit|tree)/([^/@#]+)" spec;
       # Check github:owner/repo[@ref]
       ghMatch = builtins.match "github:([^/@#]+)/([^@#]+)([@#](.+))?" spec;
       # Check owner/repo[@ref]
-      shMatch = builtins.match "([^/@#]+)/([^@#]+)([@#](.+))?" spec;
+      shMatch = builtins.match "([^/@#]+)/([^/@#]+)([@#](.+))?" spec;
       # Check https://github.com/owner/repo[.git][@ref]
       httpsMatch = builtins.match "https?://github\\.com/([^/@#]+)/([^@#]+?)(\\.git)?([@#](.+))?" spec;
     in
+    if commitMatch != null then
+      let
+        owner = builtins.elemAt commitMatch 1;
+        repo = builtins.elemAt commitMatch 2;
+        ref = builtins.elemAt commitMatch 4;
+      in
+      {
+        inherit owner repo ref;
+        url = "https://github.com/${owner}/${repo}.git";
+      }
+    else
     if ghMatch != null then
       let
         owner = builtins.elemAt ghMatch 0;

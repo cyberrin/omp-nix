@@ -159,24 +159,32 @@ let
       src
     else if lib.isString src then
       let
-        # Check if local path
-        isLocal = lib.hasPrefix "/" src || lib.hasPrefix "./" src || lib.hasPrefix "../" src;
+        isAbsolute = lib.hasPrefix "/" src;
+        isRelative = lib.hasPrefix "./" src || lib.hasPrefix "../" src;
         gitInfo = parseGitShorthand src;
       in
-      if isLocal then
+      if isAbsolute then
         /. + src
+      else if isRelative then
+        throw "Relative path string '${src}' is ambiguous in pure Nix evaluation. Pass a path literal (e.g. ./path without quotes) instead."
       else if gitInfo != null then
+        let
+          isSha = gitInfo.ref != null && (builtins.match "^[0-9a-fA-F]{40}$" gitInfo.ref != null);
+        in
         builtins.fetchGit (
           {
             url = gitInfo.url;
             allRefs = true;
           }
-          // (lib.optionalAttrs (gitInfo.ref != null) {
+          // (lib.optionalAttrs (gitInfo.ref != null && isSha) {
+            rev = gitInfo.ref;
+          })
+          // (lib.optionalAttrs (gitInfo.ref != null && !isSha) {
             ref = gitInfo.ref;
           })
         )
       else
-        throw "Unsupported marketplace source: '${src}'. Expected 'owner/repo', 'github:owner/repo', or local path."
+        throw "Unsupported marketplace source: '${src}'. Expected 'owner/repo', 'github:owner/repo', or path literal."
     else
       throw "Invalid type for marketplace source: ${builtins.typeOf src}";
 
@@ -659,6 +667,8 @@ let
             sourceType = "local";
             sourceUri = m.sourceUri;
             catalogPath = m.catalogPath;
+            addedAt = "1970-01-01T00:00:00.000Z";
+            updatedAt = "1970-01-01T00:00:00.000Z";
             lastUpdated = "1970-01-01T00:00:00.000Z";
             autoUpdate = "off";
           }) uniqueMarketplaces;

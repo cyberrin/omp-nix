@@ -45,25 +45,36 @@ In your dotfiles or NixOS `flake.nix`:
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # This flake
-    omp-plugins = {
-      url = "github:cyberrin/omp-plugins-nix";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    # This flake
+    # Declarative OMP plugin extension
     omp-plugins = {
       url = "github:cyberrin/omp-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+  };
+
+  outputs = { nixpkgs, home-manager, omp, omp-plugins, ... }: {
+    # Standalone Home Manager configuration:
+    homeConfigurations."myuser" = home-manager.lib.homeManagerConfiguration {
       pkgs = nixpkgs.legacyPackages."x86_64-linux";
       modules = [
-        omp.homeManagerModules.default          # Official OMP module
-        omp-plugins.homeManagerModules.default  # This declarative plugin extension
+        omp.homeManagerModules.default          # Official OMP module (optional)
+        omp-plugins.homeManagerModules.default  # Declarative plugin extension
         ./home.nix
       ];
     };
-  };
-}
+
+    # Or as a NixOS module:
+    # nixosConfigurations."myhost" = nixpkgs.lib.nixosSystem {
+    #   modules = [
+    #     home-manager.nixosModules.home-manager {
+    #       home-manager.users.myuser.imports = [
+    #         omp.homeManagerModules.default
+    #         omp-plugins.homeManagerModules.default
+    #         ./home.nix
+    #       ];
+    #     }
+    #   ];
+    # };
 ```
 
 ### 2. Configure plugins in `home.nix`
@@ -120,10 +131,10 @@ Accepts a list of strings, paths, or attribute sets:
 | `marketplace:<name>` | Resolves `<name>` from declared marketplaces or the official catalog | `"marketplace:clangd-lsp"` |
 | `<name>@<marketplace>` | Resolves `<name>` specifically from `<marketplace>` | `"wordpress.com@claude-plugins-official"` |
 | `<name>` | Resolves `<name>` across all declared marketplaces | `"clangd-lsp"` |
-| `github:<owner>/<repo>[@ref]` | Clones GitHub repository, auto-detects catalog or creates an ad-hoc catalog | `"github:mariozechner/context-mode"` |
+| `github:<owner>/<repo>[@ref]` | Clones GitHub repository (uses pinned SHA in pure flakes, or `--impure`) | `"github:mariozechner/context-mode"` |
 | `<owner>/<repo>[@ref]` | GitHub shorthand without `github:` prefix | `"mariozechner/context-mode@main"` |
 | `path` | Local directory containing a plugin | `./my-local-plugin` |
-| `{ name, src, version?, marketplace? }` | Pure Nix attribute set or flake input | `{ name = "sec"; src = inputs.sec; }` |
+| `{ name, src, version?, marketplace? }` | Pure Nix attribute set or flake input (Recommended for pure evaluation) | `{ name = "sec"; src = inputs.sec; }` |
 
 ### `programs.omp.marketplaces`
 
@@ -167,10 +178,12 @@ jq . result/omp-plugins.lock.json
 nix flake check
 ```
 
-Inspect using the `omp` CLI:
+Inspect using the `omp` CLI (copy to a writable directory so `omp` can initialize its native runtime caches inside `$XDG_DATA_HOME/omp/natives`):
 
 ```bash
-XDG_DATA_HOME=result omp plugin marketplace list
-XDG_DATA_HOME=result omp plugin list
-XDG_DATA_HOME=result omp plugin discover
+TMP_DATA=$(mktemp -d)
+cp -rL result/* "$TMP_DATA/" && chmod -R u+w "$TMP_DATA"
+XDG_DATA_HOME="$TMP_DATA" omp plugin marketplace list
+XDG_DATA_HOME="$TMP_DATA" omp plugin list
+rm -rf "$TMP_DATA"
 ```

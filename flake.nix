@@ -58,10 +58,14 @@
         {
           # Synthesizes and extracts the generated JSON files for inspection
           test-json = pkgs.runCommand "omp-test-json-output" { } ''
-            mkdir -p $out
-            cp ${testEval.config.xdg.dataFile."omp/plugins/installed_plugins.json".source} $out/installed_plugins.json
+            mkdir -p $out/omp/plugins
             cp ${testEval.config.xdg.dataFile."omp/marketplaces.json".source} $out/marketplaces.json
+            cp ${testEval.config.xdg.dataFile."omp/plugins/installed_plugins.json".source} $out/installed_plugins.json
             cp ${testEval.config.xdg.dataFile."omp/plugins/omp-plugins.lock.json".source} $out/omp-plugins.lock.json
+
+            ln -s $out/marketplaces.json $out/omp/marketplaces.json
+            ln -s $out/installed_plugins.json $out/omp/plugins/installed_plugins.json
+            ln -s $out/omp-plugins.lock.json $out/omp/plugins/omp-plugins.lock.json
           '';
 
           default = self.packages.${system}.test-json;

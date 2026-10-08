@@ -132,10 +132,6 @@ in
     {
       xdg.dataFile."omp/marketplaces.json".source = resolved.marketplacesJson;
       xdg.dataFile."omp/plugins/installed_plugins.json".source = resolved.installedPluginsJson;
-      xdg.configFile."omp/config.yml".text = lib.mkDefault ''
-        marketplace:
-          autoUpdate: "off"
-      '';
     }
 
     # Optional node_modules and omp-plugins.lock.json links for extension plugins
@@ -160,16 +156,27 @@ in
 
     # Fallback activation to ensure ~/.omp/agent/config.yml has autoUpdate: off
     (lib.mkIf cfg.disableAutoUpdate {
-      home.activation.ompDeclarativeConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-        $DRY_RUN_CMD mkdir -p "$HOME/.omp/agent"
-        if [ ! -f "$HOME/.omp/agent/config.yml" ]; then
-          $DRY_RUN_CMD cat << 'EOF' > "$HOME/.omp/agent/config.yml"
+      home.activation.ompDeclarativeConfig = {
+        before = [ ];
+        after = [ "writeBoundary" ];
+        data = ''
+          $DRY_RUN_CMD mkdir -p "$HOME/.omp/agent"
+          if [ -f "$HOME/.omp/agent/config.yml" ]; then
+            if ! grep -q "autoUpdate" "$HOME/.omp/agent/config.yml" 2>/dev/null; then
+              $DRY_RUN_CMD cat << 'EOF' >> "$HOME/.omp/agent/config.yml"
 marketplace:
   autoUpdate: "off"
 EOF
-          $DRY_RUN_CMD chmod 600 "$HOME/.omp/agent/config.yml"
-        fi
-      '';
+            fi
+          else
+            $DRY_RUN_CMD cat << 'EOF' > "$HOME/.omp/agent/config.yml"
+marketplace:
+  autoUpdate: "off"
+EOF
+            $DRY_RUN_CMD chmod 600 "$HOME/.omp/agent/config.yml"
+          fi
+        '';
+      };
     })
     ]))
   ];
